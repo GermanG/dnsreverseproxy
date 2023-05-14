@@ -3,7 +3,7 @@ Description=DNS Reverse Proxy
 After=network.target
 
 [Service]
-ExecStart=/usr/local/sbin/dnsreverseproxy -m germang.ar -l :53
+ExecStart=/usr/local/sbin/dnsreverseproxy -m example.com -l :53
 Restart=always
 
 [Install]
