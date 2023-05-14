@@ -23,6 +23,7 @@ func main() {
 type options struct {
 	upstreamNormal  []string
 	upstreamSpecial []string
+	upstreamDomains []string
 	masquedDomain   string
 	upstreamDomain  string
 }
@@ -38,6 +39,15 @@ func getRandomUpstream(upstreams []string) (string, string) {
 	return parts[0], parts[1]
 }
 
+func HasSuffixInSlice(str string, suffixes []string) bool {
+	for _, suffix := range suffixes {
+		if strings.HasSuffix(str, suffix) {
+			return true
+		}
+	}
+	return false
+}
+
 func handleDNSRequest(w dns.ResponseWriter, r *dns.Msg, opts options) {
 	var upstreamHost, upstreamPort string
 	defer func() {
@@ -49,7 +59,7 @@ func handleDNSRequest(w dns.ResponseWriter, r *dns.Msg, opts options) {
 	m := new(dns.Msg)
 	log.Println(r.Question[0].Name)
 	if strings.HasSuffix(r.Question[0].Name, opts.masquedDomain) ||
-		strings.HasSuffix(r.Question[0].Name, opts.upstreamDomain) {
+		HasSuffixInSlice(r.Question[0].Name, opts.upstreamDomains) {
 		m.SetQuestion(strings.Replace(r.Question[0].Name, opts.masquedDomain, opts.upstreamDomain, 1), r.Question[0].Qtype)
 		upstreamHost, upstreamPort = getRandomUpstream(opts.upstreamSpecial)
 	} else {
@@ -115,6 +125,12 @@ func main() {
 				Usage:   "Upstream domain to be masqued",
 			},
 			&cli.StringSliceFlag{
+				Name:    "upstream-domains",
+				Aliases: []string{"uds"},
+				Value:   cli.NewStringSlice("service.consul.", ".consul."),
+				Usage:   "Upstream domains to be resolved",
+			},
+			&cli.StringSliceFlag{
 				Name:    "upstream-special",
 				Aliases: []string{"uc"},
 				Value:   cli.NewStringSlice("localhost:8600"),
@@ -134,6 +150,7 @@ func main() {
 			opts.upstreamNormal = c.StringSlice("upstream-normal")
 			opts.masquedDomain = appendPeriods(c.String("masqued-domain"))
 			opts.upstreamDomain = appendPeriods(c.String("upstream-domain"))
+			opts.upstreamDomains = c.StringSlice("upstream-domains")
 
 			server := &dns.Server{Addr: listenAddr, Net: "udp"}
 			dns.HandleFunc(".", func(w dns.ResponseWriter, r *dns.Msg) {
