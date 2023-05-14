@@ -40,7 +40,6 @@ func getRandomUpstream(upstreams []string) (string, string) {
 
 func handleDNSRequest(w dns.ResponseWriter, r *dns.Msg, opts options) {
 	var upstreamHost, upstreamPort string
-	var special bool
 	defer func() {
 		if err := w.Close(); err != nil {
 			log.Println("Error closing connection:", err)
@@ -49,15 +48,13 @@ func handleDNSRequest(w dns.ResponseWriter, r *dns.Msg, opts options) {
 	c := new(dns.Client)
 	m := new(dns.Msg)
 	log.Println(r.Question[0].Name)
-	if strings.HasSuffix(r.Question[0].Name, opts.masquedDomain) {
+	if strings.HasSuffix(r.Question[0].Name, opts.masquedDomain) ||
+		strings.HasSuffix(r.Question[0].Name, opts.upstreamDomain) {
 		m.SetQuestion(strings.Replace(r.Question[0].Name, opts.masquedDomain, opts.upstreamDomain, 1), r.Question[0].Qtype)
 		upstreamHost, upstreamPort = getRandomUpstream(opts.upstreamSpecial)
-		special = true
 	} else {
 		m.SetQuestion(r.Question[0].Name, r.Question[0].Qtype)
 		upstreamHost, upstreamPort = getRandomUpstream(opts.upstreamNormal)
-		special = false
-
 	}
 	in, _, err := c.Exchange(m, net.JoinHostPort(upstreamHost, upstreamPort))
 	log.Println(in)
@@ -69,7 +66,7 @@ func handleDNSRequest(w dns.ResponseWriter, r *dns.Msg, opts options) {
 
 	res := new(dns.Msg)
 	res.SetReply(r)
-	if special {
+	if strings.HasSuffix(r.Question[0].Name, opts.masquedDomain) {
 		for _, ans := range in.Answer {
 			if ans.Header().Rrtype == dns.TypeA {
 				if a, ok := ans.(*dns.A); ok {
@@ -82,6 +79,16 @@ func handleDNSRequest(w dns.ResponseWriter, r *dns.Msg, opts options) {
 	log.Println(in.Answer)
 	res.RecursionAvailable = true
 	w.WriteMsg(res)
+}
+
+func appendPeriods(str string) string {
+	if !strings.HasPrefix(str, ".") {
+		str = "." + str
+	}
+	if !strings.HasSuffix(str, ".") {
+		str = str + "."
+	}
+	return str
 }
 
 func main() {
@@ -125,8 +132,8 @@ func main() {
 			listenAddr := c.String("listen")
 			opts.upstreamSpecial = c.StringSlice("upstream-special")
 			opts.upstreamNormal = c.StringSlice("upstream-normal")
-			opts.masquedDomain = c.String("masqued-domain")
-			opts.upstreamDomain = c.String("upstream-domain")
+			opts.masquedDomain = appendPeriods(c.String("masqued-domain"))
+			opts.upstreamDomain = appendPeriods(c.String("upstream-domain"))
 
 			server := &dns.Server{Addr: listenAddr, Net: "udp"}
 			dns.HandleFunc(".", func(w dns.ResponseWriter, r *dns.Msg) {
