@@ -61,13 +61,12 @@ func handleDNSRequest(w dns.ResponseWriter, r *dns.Msg, opts options) {
 		upstreamHost, upstreamPort = getRandomUpstream(opts.upstreamNormal)
 	}
 	in, _, err := c.Exchange(m, net.JoinHostPort(upstreamHost, upstreamPort))
-	if special && len(in.Answer) == 0 {
+	if special && ( in == nil || len(in.Answer) == 0 ) {
 		log.Println(r.Question[0].Name, "not found retrying with normal upstream")
+		m.SetQuestion(r.Question[0].Name, r.Question[0].Qtype)
 		upstreamHost, upstreamPort = getRandomUpstream(opts.upstreamNormal)
 		in, _, err = c.Exchange(m, net.JoinHostPort(upstreamHost, upstreamPort))
 	}
-
-	log.Println(in)
 
 	if err != nil {
 		log.Println(err)
