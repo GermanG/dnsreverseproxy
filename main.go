@@ -50,7 +50,7 @@ func handleDNSRequest(w dns.ResponseWriter, r *dns.Msg, opts options) {
 	}()
 	c := new(dns.Client)
 	m := new(dns.Msg)
-	log.Println(r.Question[0].Name)
+	// log.Println(r.Question[0].Name)
 	if strings.HasSuffix(r.Question[0].Name, opts.masquedDomain) ||
 		HasSuffixInSlice(r.Question[0].Name, opts.upstreamDomains) {
 		m.SetQuestion(strings.Replace(r.Question[0].Name, opts.masquedDomain, opts.upstreamDomain, 1), r.Question[0].Qtype)
@@ -62,7 +62,7 @@ func handleDNSRequest(w dns.ResponseWriter, r *dns.Msg, opts options) {
 	}
 	in, _, err := c.Exchange(m, net.JoinHostPort(upstreamHost, upstreamPort))
 	if special && ( in == nil || len(in.Answer) == 0 ) {
-		log.Println(r.Question[0].Name, "not found retrying with normal upstream")
+		log.Println(r.Question[0].String(), "not found retrying with normal upstream")
 		m.SetQuestion(r.Question[0].Name, r.Question[0].Qtype)
 		upstreamHost, upstreamPort = getRandomUpstream(opts.upstreamNormal)
 		in, _, err = c.Exchange(m, net.JoinHostPort(upstreamHost, upstreamPort))
@@ -85,7 +85,7 @@ func handleDNSRequest(w dns.ResponseWriter, r *dns.Msg, opts options) {
 		}
 	}
 	res.Answer = in.Answer
-	log.Println(in.Answer)
+	// log.Println(in.Answer)
 	res.RecursionAvailable = true
 	w.WriteMsg(res)
 }

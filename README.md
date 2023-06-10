@@ -29,3 +29,4 @@ GLOBAL OPTIONS:
 ## ToDo
 
 Config file
+Debug mode
