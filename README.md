@@ -28,7 +28,7 @@ GLOBAL OPTIONS:
 
 ## ToDo
 
-Config file.
-Debug mode.
-Retry normal upstream.
-Enable local DNS overrides.
+Config file.<br/>
+Debug mode.<br/>
+Retry normal upstream.<br/>
+Enable local DNS overrides.<br/>
