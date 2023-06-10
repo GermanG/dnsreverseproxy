@@ -61,7 +61,7 @@ func handleDNSRequest(w dns.ResponseWriter, r *dns.Msg, opts options) {
 		upstreamHost, upstreamPort = getRandomUpstream(opts.upstreamNormal)
 	}
 	in, _, err := c.Exchange(m, net.JoinHostPort(upstreamHost, upstreamPort))
-	if special && ( in == nil || len(in.Answer) == 0 ) {
+	if special && (in == nil || len(in.Answer) == 0) {
 		log.Println(r.Question[0].String(), "not found retrying with normal upstream")
 		m.SetQuestion(r.Question[0].Name, r.Question[0].Qtype)
 		upstreamHost, upstreamPort = getRandomUpstream(opts.upstreamNormal)
@@ -150,7 +150,6 @@ func main() {
 			opts.masquedDomain = appendPeriods(c.String("masqued-domain"))
 			opts.upstreamDomain = appendPeriods(c.String("upstream-domain"))
 			opts.upstreamDomains = c.StringSlice("upstream-domains")
-
 			server := &dns.Server{Addr: listenAddr, Net: "udp"}
 			dns.HandleFunc(".", func(w dns.ResponseWriter, r *dns.Msg) {
 				handleDNSRequest(w, r, opts)

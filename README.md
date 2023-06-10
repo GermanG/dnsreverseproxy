@@ -30,3 +30,4 @@ GLOBAL OPTIONS:
 
 Config file
 Debug mode
+Retry normal upstream
